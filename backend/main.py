@@ -40,16 +40,14 @@ app = FastAPI(
     ]
 )
 
-# CORS Configuration
-# Allow requests from frontend origin specified in environment
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-
+# CORS Configuration - ALLOW ALL ORIGINS
+# This allows requests from any origin (debugging mode)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
     max_age=86400  # Cache preflight requests for 24 hours
 )
 

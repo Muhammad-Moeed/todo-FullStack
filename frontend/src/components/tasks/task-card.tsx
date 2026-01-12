@@ -87,8 +87,7 @@ export function TaskCard({
             </p>
           )}
 
-          {/* Priority, Tags, and Due Date */}
-          <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2">
             <PriorityBadge priority={task.priority} />
 
             {task.tags && task.tags.length > 0 && (
@@ -98,23 +97,20 @@ export function TaskCard({
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Due Date - separate row for better visibility */}
-          {task.due_date && (
-            <div className="mb-2">
+            {task.due_date && (
               <span
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                className={`text-xs ${
                   isOverdue
-                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                    : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                    ? "text-danger font-semibold"
+                    : "text-gray-500 dark:text-gray-400"
                 }`}
               >
                 📅 {new Date(task.due_date).toLocaleDateString()}
-                {isOverdue && ` • ${t("tasks.overdue")}`}
+                {isOverdue && ` (${t("tasks.overdue")})`}
               </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

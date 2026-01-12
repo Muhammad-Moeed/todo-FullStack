@@ -17,13 +17,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Use useSession with minimal configuration to prevent infinite loops
-  const { data: session, isPending } = authClient.useSession({
-    refetchInterval: false, // Disable auto-refetch
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    refetchOnMount: true, // Only fetch once on mount
-    retry: false, // Don't retry on error
-  });
+  // Use useSession hook (no options - Better Auth handles it internally)
+  const { data: session, isPending } = authClient.useSession();
   const [user, setUser] = useState<User | null>(null);
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,8 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: session.user.name || undefined,
             createdAt: session.user.createdAt?.toISOString() || new Date().toISOString(),
           },
-          token: session.sessionToken || "",
-          expiresAt: session.expiresAt?.toISOString() || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          token: session.session?.token || "",
+          expiresAt: session.session?.expiresAt?.toISOString() || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         };
         setUserSession(convertedSession);
         setUser(convertedSession.user);

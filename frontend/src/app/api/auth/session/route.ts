@@ -4,16 +4,16 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(req: NextRequest) {
   try {
     // Use Better Auth's API to get session
-    const session = await auth.api.getSession({
+    const sessionData = await auth.api.getSession({
       headers: req.headers,
     });
 
-    if (session) {
+    if (sessionData && sessionData.user) {
       return NextResponse.json({
         session: {
-          user: session.user,
-          sessionToken: session.sessionToken,
-          expiresAt: session.expiresAt,
+          user: sessionData.user,
+          sessionToken: sessionData.session?.token || "",
+          expiresAt: sessionData.session?.expiresAt?.toISOString() || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         },
       });
     }
