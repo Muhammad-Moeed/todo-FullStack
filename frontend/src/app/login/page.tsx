@@ -39,7 +39,7 @@ export default function LoginPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Use window.location for reliable redirect
-      window.location.href = "/tasks";
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setError(err?.message || t("auth.loginError"));
       setIsLoading(false);

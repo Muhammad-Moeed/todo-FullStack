@@ -18,14 +18,30 @@ class ApiClient {
 
     // Clear expired cache
     this.tokenCache = null;
-    // Get JWT token from bridge endpoint
-    // This converts Better Auth session to JWT token for FastAPI
+    
     if (typeof window === "undefined") return null;
 
     try {
-      // Get JWT token from bridge endpoint
+      // Get session from localStorage (mock auth)
+      const savedSession = localStorage.getItem("session");
+      if (!savedSession) {
+        return null;
+      }
+
+      const session = JSON.parse(savedSession);
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        return null;
+      }
+
+      // Get JWT token from bridge endpoint with user ID
       const response = await fetch("/api/auth/jwt-token", {
-        credentials: "include", // Include cookies for Better Auth session
+        method: "GET",
+        headers: {
+          "x-user-id": userId,
+        },
+        credentials: "include",
       });
       
       if (response.ok) {

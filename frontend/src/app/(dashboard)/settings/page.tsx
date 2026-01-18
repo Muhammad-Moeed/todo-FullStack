@@ -1,6 +1,15 @@
+"use client";
+
+import { useAuth } from "@/contexts/auth-context";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 
 export default function SettingsPage() {
+  // Auth is globally available through context
+  const { user, session, isAuthenticated } = useAuth();
+  
+  // You can use user.id, session.token, etc. here if needed
+  // For example: console.log("Current user:", user?.id);
+  
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto">

@@ -23,3 +23,6 @@ build/
 
 # Documentation
 docs/_build/
+
+.vercel
+.env*.local

@@ -1,9 +1,9 @@
 /**
  * JWT Token Bridge Endpoint
- * Converts Better Auth session to JWT token for FastAPI backend
+ * Converts session to JWT token for FastAPI backend
  * 
  * This endpoint:
- * 1. Gets the current Better Auth session from cookies
+ * 1. Gets the current session from cookies/headers (mock auth)
  * 2. Extracts user_id from the session
  * 3. Generates a JWT token using BETTER_AUTH_SECRET
  * 4. Returns the JWT token to the frontend
@@ -11,30 +11,19 @@
  * The frontend can then use this JWT token in Authorization header for FastAPI requests
  */
 
-import { auth } from "@/lib/auth-server";
 import { generateJWTToken } from "@/lib/jwt-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    // Get Better Auth session from cookies
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
+    // For mock auth, get user ID from header or cookie
+    // The api-client sends user ID in x-user-id header
+    const userId = req.headers.get("x-user-id") || req.cookies.get("user-id")?.value;
 
-    if (!session || !session.user) {
+    if (!userId) {
       return NextResponse.json(
         { error: "Not authenticated", token: null },
         { status: 401 }
-      );
-    }
-
-    // Extract user_id from session
-    const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID not found in session", token: null },
-        { status: 500 }
       );
     }
 

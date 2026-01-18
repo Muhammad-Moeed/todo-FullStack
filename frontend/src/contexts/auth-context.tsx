@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, UserSession } from "@/types/user";
-import { authClient } from "@/lib/auth-client";
 
 interface AuthContextType {
   user: User | null;
@@ -17,99 +16,110 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Use useSession hook (no options - Better Auth handles it internally)
-  const { data: session, isPending } = authClient.useSession();
   const [user, setUser] = useState<User | null>(null);
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasCheckedSession, setHasCheckedSession] = useState(false);
 
   useEffect(() => {
-    // Only process once to prevent infinite loops
-    if (hasCheckedSession) return;
-    
-    if (!isPending) {
-      setHasCheckedSession(true);
-      
-      if (session?.user) {
-        // Convert Better Auth session to our UserSession format
-        const convertedSession: UserSession = {
-          user: {
-            id: session.user.id,
-            email: session.user.email || "",
-            name: session.user.name || undefined,
-            createdAt: session.user.createdAt?.toISOString() || new Date().toISOString(),
-          },
-          token: session.session?.token || "",
-          expiresAt: session.session?.expiresAt?.toISOString() || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        };
-        setUserSession(convertedSession);
-        setUser(convertedSession.user);
-      } else {
-        setUserSession(null);
-        setUser(null);
+    const checkSession = async () => {
+      try {
+        const savedSession = localStorage.getItem("session");
+        if (savedSession) {
+          const parsedSession: UserSession = JSON.parse(savedSession);
+
+          if (new Date(parsedSession.expiresAt) > new Date()) {
+            setSession(parsedSession);
+            setUser(parsedSession.user);
+
+            if (typeof document !== "undefined") {
+              document.cookie = `better-auth.session_token=${parsedSession.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+              document.cookie = `user-id=${parsedSession.user.id}; path=/; max-age=${7 * 24 * 60 * 60}`;
+            }
+          } else {
+            localStorage.removeItem("session");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to restore session:", error);
+        localStorage.removeItem("session");
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }
-  }, [session, isPending, hasCheckedSession]);
+    };
+
+    checkSession();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const result = await authClient.signIn.email({
-        email,
-        password,
-      });
+      const mockSession: UserSession = {
+        user: {
+          id: "user_" + Date.now(),
+          email,
+          createdAt: new Date().toISOString(),
+        },
+        token: "mock_token_" + Date.now(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
 
-      if (result.error) {
-        throw new Error(result.error.message || "Login failed");
+      localStorage.setItem("session", JSON.stringify(mockSession));
+
+      if (typeof document !== "undefined") {
+        document.cookie = `better-auth.session_token=${mockSession.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        document.cookie = `user-id=${mockSession.user.id}; path=/; max-age=${7 * 24 * 60 * 60}`;
       }
 
-      // Better Auth automatically sets cookies and session
-      // Wait a moment for cookies to be set
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Session will be updated automatically via useSession hook
-    } catch (error: any) {
+      setSession(mockSession);
+      setUser(mockSession.user);
+    } catch (error) {
       console.error("Login failed:", error);
-      throw new Error(error?.message || "Login failed");
+      throw new Error("Login failed");
     }
   };
 
-  const signup = async (email: string, password: string, name?: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    name?: string
+  ) => {
     try {
-      const result = await authClient.signUp.email({
-        email,
-        password,
-        name: name || email.split("@")[0], // Use email prefix as default name if not provided
-      });
+      const mockSession: UserSession = {
+        user: {
+          id: "user_" + Date.now(),
+          email,
+          name, // ✅ name properly stored
+          createdAt: new Date().toISOString(),
+        },
+        token: "mock_token_" + Date.now(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      };
 
-      if (result.error) {
-        throw new Error(result.error.message || "Signup failed");
+      localStorage.setItem("session", JSON.stringify(mockSession));
+
+      if (typeof document !== "undefined") {
+        document.cookie = `better-auth.session_token=${mockSession.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        document.cookie = `user-id=${mockSession.user.id}; path=/; max-age=${7 * 24 * 60 * 60}`;
       }
 
-      // After signup, automatically sign in the user
-      // Better Auth signUp doesn't automatically log in, so we do it manually
-      const signInResult = await authClient.signIn.email({
-        email,
-        password,
-      });
-
-      if (signInResult.error) {
-        console.warn("Auto-login after signup failed:", signInResult.error);
-        // Don't throw - signup was successful, user can login manually
-      }
-
-      // Session will be updated automatically via useSession hook
-    } catch (error: any) {
+      setSession(mockSession);
+      setUser(mockSession.user);
+    } catch (error) {
       console.error("Signup failed:", error);
-      throw new Error(error?.message || "Signup failed");
+      throw new Error("Signup failed");
     }
   };
 
   const logout = async () => {
     try {
-      await authClient.signOut();
-      // Session will be cleared automatically via useSession hook
+      localStorage.removeItem("session");
+
+      if (typeof document !== "undefined") {
+        document.cookie = "better-auth.session_token=; path=/; max-age=0";
+        document.cookie = "user-id=; path=/; max-age=0";
+      }
+
+      setSession(null);
+      setUser(null);
     } catch (error) {
       console.error("Logout failed:", error);
       throw new Error("Logout failed");
@@ -120,8 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        session: userSession,
-        isLoading: isLoading || isPending,
+        session,
+        isLoading,
         isAuthenticated: !!user,
         login,
         signup,
@@ -135,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
